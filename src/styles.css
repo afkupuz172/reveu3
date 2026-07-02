@@ -170,6 +170,12 @@ table.data.pairs td, table.data.pairs th { padding: 8px 8px; font-size: 13px; }
 
 .warning.scope { background: #eef1f6; border-color: #d6dce8; color: #3d4a63; }
 
+.stage-group { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.stage-group-name {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--muted); min-width: 110px; text-align: right;
+}
+
 .empty { color: var(--muted); text-align: center; padding: 28px 0; }
 .warnings { margin: 0 0 18px; }
 .warning { background: var(--warn-soft); border: 1px solid #f0dcb2; color: #7a5714; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; font-size: 13px; }

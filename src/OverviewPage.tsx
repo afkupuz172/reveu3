@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CompanyHit, OverviewData, StageOption } from "../shared/types";
 import { apiOverview, apiStages } from "./api";
 import NrrChart from "./NrrChart";
@@ -28,6 +28,28 @@ export default function OverviewPage({ onOpenCompany }: { onOpenCompany: (c: Com
       return next;
     });
 
+  // Stages grouped by pipeline, pipelines and stage labels both alphabetical.
+  const pipelineGroups = useMemo(() => {
+    const byPipeline = new Map<string, StageOption[]>();
+    for (const s of stages) {
+      if (!byPipeline.has(s.pipeline)) byPipeline.set(s.pipeline, []);
+      byPipeline.get(s.pipeline)!.push(s);
+    }
+    return [...byPipeline.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([pipeline, list]) => ({ pipeline, list: [...list].sort((a, b) => a.label.localeCompare(b.label)) }));
+  }, [stages]);
+
+  // Select-all per pipeline: if every stage in the pipeline is already
+  // selected, the same chip deselects them all.
+  const toggleAll = (list: StageOption[]) =>
+    setSelectedStages((prev) => {
+      const next = new Set(prev);
+      const allOn = list.every((s) => next.has(s.id));
+      for (const s of list) allOn ? next.delete(s.id) : next.add(s.id);
+      return next;
+    });
+
   const run = async () => {
     setLoading(true);
     setError(null);
@@ -39,8 +61,6 @@ export default function OverviewPage({ onOpenCompany }: { onOpenCompany: (c: Com
       setLoading(false);
     }
   };
-
-  const multiPipeline = new Set(stages.map((s) => s.pipeline)).size > 1;
 
   return (
     <>
@@ -71,23 +91,42 @@ export default function OverviewPage({ onOpenCompany }: { onOpenCompany: (c: Com
           <div style={{ marginTop: 12 }}>
             <label className="small muted" style={{ fontWeight: 600 }}>
               Pipeline status — deals found by the search must be in one of the selected statuses (none selected = all)
-            </label>
-            <div className="filters" style={{ flexWrap: "wrap", marginTop: 6 }}>
-              {stages.map((s) => (
-                <button
-                  key={s.id}
-                  className={`chip ${selectedStages.has(s.id) ? "active" : ""}`}
-                  onClick={() => toggleStage(s.id)}
-                  title={s.pipeline}
-                >
-                  {s.label}
-                  {multiPipeline && <span className="muted small"> · {s.pipeline}</span>}
-                </button>
-              ))}
               {selectedStages.size > 0 && (
-                <button className="chip" onClick={() => setSelectedStages(new Set())}>clear</button>
+                <>
+                  {" "}
+                  <button className="linklike small" style={{ display: "inline" }} onClick={() => setSelectedStages(new Set())}>
+                    clear selection
+                  </button>
+                </>
               )}
-            </div>
+            </label>
+            {pipelineGroups.map(({ pipeline, list }) => {
+              const allOn = list.every((s) => selectedStages.has(s.id));
+              return (
+                <div className="stage-group" key={pipeline}>
+                  <span className="stage-group-name">{pipeline}</span>
+                  <div className="filters" style={{ flexWrap: "wrap", margin: 0 }}>
+                    <button
+                      className={`chip ${allOn ? "active" : ""}`}
+                      onClick={() => toggleAll(list)}
+                      title={allOn ? `Deselect all ${pipeline} stages` : `Select all ${pipeline} stages`}
+                    >
+                      All stages
+                    </button>
+                    {list.map((s) => (
+                      <button
+                        key={s.id}
+                        className={`chip ${selectedStages.has(s.id) ? "active" : ""}`}
+                        onClick={() => toggleStage(s.id)}
+                        title={pipeline}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
