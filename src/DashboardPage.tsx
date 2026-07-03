@@ -127,7 +127,7 @@ export default function DashboardPage({
             </div>
           )}
 
-          <SourcesPanel candidates={resolve.candidates} selected={selected} contributions={contributions} onToggle={toggle} />
+          <SourcesPanel candidates={resolve.candidates} selected={selected} contributions={contributions} sources={resolve.sources} onToggle={toggle} />
 
           {phase === "loading" && (
             <div className="loading">

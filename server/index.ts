@@ -2,7 +2,7 @@ import express from "express";
 import crypto from "node:crypto";
 import { env } from "./env.js";
 import { buildDashboard, resolveCompany, sourceStatus } from "./dashboard.js";
-import { listStageOptions, searchCompanies } from "./hubspot.js";
+import { companyDisplayName, listStageOptions, searchCompanies } from "./hubspot.js";
 import { buildOverview, dealLineItems } from "./overview.js";
 import { isScopeError } from "./util.js";
 import { qboAuthUrl, qboConfigured, qboExchangeCode } from "./qbo.js";
@@ -25,7 +25,7 @@ app.get(
   "/api/companies",
   wrap(async (req, res) => {
     const results = await searchCompanies(String(req.query.q ?? ""));
-    res.json(results.map((r) => ({ id: r.id, name: r.properties.name || "(unnamed)", domain: r.properties.domain || null })));
+    res.json(results.map((r) => ({ id: r.id, name: companyDisplayName(r.properties, r.id), domain: r.properties.domain || null })));
   }),
 );
 

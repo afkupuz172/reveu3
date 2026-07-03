@@ -114,6 +114,8 @@ th.num { text-align: right; }
 
 .source-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .source-row:last-child { border-bottom: none; }
+.source-row.inactive { opacity: .8; }
+.source-row.inactive .who a { color: var(--accent); }
 .source-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
 .source-row .who { flex: 1; min-width: 0; }
 .source-row .who .name { font-weight: 600; }

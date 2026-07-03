@@ -5,7 +5,7 @@ import type {
   DashboardData, Deal, Invoice, Product, ResolveResult, ScopeIssue, SourceCandidate, SourceContribution, Ticket,
 } from "../shared/types.js";
 import {
-  DEAL_PROPS, assocBatch, assocList, batchRead, getCompany, getStageMap, searchCompanies,
+  DEAL_PROPS, assocBatch, assocList, batchRead, companyDisplayName, getCompany, getStageMap, searchCompanies,
 } from "./hubspot.js";
 import { AUTO_SELECT, SHOW_THRESHOLD, scoreCandidate, toCandidate, type CompanyIdentity } from "./match.js";
 import { hasStripe, stripeBilling, stripeCandidatePool } from "./stripe.js";
@@ -38,10 +38,14 @@ async function companyIdentity(
         .filter((d): d is string => Boolean(d)),
     ),
   ];
-  const name = rec.properties.name || "(unnamed)";
+  const name = companyDisplayName(rec.properties, companyId);
   const domain = rec.properties.domain || null;
+  // For fuzzy matching, a domain-only company still needs name tokens:
+  // "via.lakehaus.ch" → "via lakehaus" (TLD dropped) matches a QBO/Stripe
+  // customer named "Lakehaus" far better than the raw hostname would.
+  const matchName = rec.properties.name || (domain ? domain.split(".").slice(0, -1).join(" ") || domain : name);
   return {
-    identity: { name, domain, contactDomains },
+    identity: { name: matchName, domain, contactDomains },
     company: { id: companyId, name, domain },
   };
 }
@@ -299,7 +303,7 @@ export async function buildDashboard(
     return {
       company: {
         id: companyId,
-        name: identity.name,
+        name: company.name,
         domain: identity.domain,
         industry: companyRec.properties.industry || null,
         city: companyRec.properties.city || null,

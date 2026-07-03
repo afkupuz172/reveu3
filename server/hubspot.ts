@@ -46,15 +46,28 @@ type HsRecord = { id: string; properties: Record<string, string | null> };
 export async function searchCompanies(q: string): Promise<HsRecord[]> {
   const query = q.trim();
   return cached(`hs:cosearch:${query.toLowerCase()}`, 30_000, async () => {
+    // With a query, let HubSpot rank by relevance. Without one, show recently
+    // active companies — sorting by name floats production's blank-named
+    // auto-created companies to the top of the dropdown.
     const body = query
-      ? { query, limit: 10, properties: ["name", "domain"], sorts: ["name"] }
-      : { limit: 10, properties: ["name", "domain"], sorts: ["name"] };
+      ? { query, limit: 10, properties: ["name", "domain"] }
+      : {
+          limit: 10,
+          properties: ["name", "domain"],
+          sorts: [{ propertyName: "hs_lastmodifieddate", direction: "DESCENDING" }],
+        };
     const res = await hsFetch<{ results: HsRecord[] }>("/crm/v3/objects/companies/search", {
       method: "POST",
       body: JSON.stringify(body),
     });
     return res.results;
   });
+}
+
+// Production portals are full of auto-created companies with no name (just a
+// domain). Fall back name → domain → id for anything user-facing.
+export function companyDisplayName(props: Record<string, string | null>, id: string): string {
+  return props.name || props.domain || `Company #${id}`;
 }
 
 export async function getCompany(id: string): Promise<HsRecord> {
